@@ -42,17 +42,12 @@
         /* PRINT STYLING - Kunci untuk PDF */
         @media print {
             body * { visibility: hidden; }
-            #printModal, #printModal * { visibility: visible; }
-            #printModal {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                margin: 0;
-                padding: 0;
-                background: white;
-                z-index: 9999;
-            }
+            #printModal, #printModal *, #summaryModal, #summaryModal * { visibility: visible; }
+            
+            /* Logic untuk papar modal yang betul bila print */
+            #printModal { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; background: white; z-index: 9999; }
+            #summaryModal { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; background: white; z-index: 9999; }
+            
             .no-print { display: none !important; }
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -198,15 +193,20 @@
                 </div>
             </div>
             
-            <div class="p-4 bg-gray-50 border-b flex justify-between items-center">
+            <div class="p-4 bg-gray-50 border-b flex justify-between items-center flex-wrap gap-2">
                 <div>
                     <h4 class="font-bold text-gray-700">Senarai Permohonan</h4>
                     <p class="text-xs text-gray-500">Data diambil terus daripada Google Sheet (Live CSV)</p>
                 </div>
-                <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-2">
                     <span id="statusAdmin" class="text-xs text-gray-600 italic">Menunggu data...</span>
+                    <!-- Butang Refresh -->
                     <button onclick="fetchAdminData()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm shadow flex items-center">
                         <i class="fas fa-sync-alt mr-2"></i> Refresh
+                    </button>
+                    <!-- Butang Laporan Penuh Baru -->
+                    <button onclick="openSummaryReport()" class="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded text-sm shadow flex items-center">
+                        <i class="fas fa-table mr-2"></i> Laporan Penuh
                     </button>
                 </div>
             </div>
@@ -231,7 +231,7 @@
         </div>
     </section>
 
-    <!-- EDIT MODAL (New) -->
+    <!-- EDIT MODAL -->
     <div id="editModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden z-50 flex items-center justify-center backdrop-blur-sm no-print">
         <div class="bg-white rounded-lg p-6 w-full max-w-lg shadow-2xl border border-gray-200 overflow-y-auto max-h-[90vh]">
             <div class="flex justify-between items-center mb-4 border-b pb-2">
@@ -279,7 +279,7 @@
         </div>
     </div>
 
-    <!-- REPORT VIEW / PDF MODAL -->
+    <!-- INDIVIDUAL REPORT VIEW / PDF MODAL -->
     <div id="printModal" class="hidden bg-white min-h-screen p-8">
         <div class="max-w-[210mm] mx-auto mb-6 flex justify-between items-center no-print bg-gray-100 p-4 rounded border">
             <span class="font-bold text-gray-700">Paparan Cetakan / PDF</span>
@@ -311,6 +311,56 @@
                 </div>
             </div>
             <div class="mt-8 text-center text-xs text-gray-400">Laporan ini dijana secara komputer.</div>
+        </div>
+    </div>
+
+    <!-- SUMMARY REPORT MODAL (BARU) -->
+    <div id="summaryModal" class="hidden bg-white min-h-screen p-8">
+        <!-- Header Controls (No Print) -->
+        <div class="max-w-[297mm] mx-auto mb-6 flex justify-between items-center no-print bg-gray-100 p-4 rounded border">
+            <span class="font-bold text-gray-700">Laporan Keseluruhan Data</span>
+            <div>
+                <button onclick="closeSummaryReport()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 mr-2 text-sm">Tutup</button>
+                <button onclick="window.print()" class="px-4 py-2 bg-blue-900 text-white rounded hover:bg-blue-800 shadow text-sm font-bold"><i class="fas fa-print mr-1"></i> Cetak Laporan</button>
+            </div>
+        </div>
+
+        <!-- Landscape A4 Container -->
+        <div class="max-w-[297mm] mx-auto bg-white border border-gray-200 shadow-lg p-10 print:border-0 print:shadow-none print:p-0 print:max-w-full" style="min-height: 210mm;">
+            <!-- Header Laporan -->
+            <div class="text-center border-b-4 border-blue-900 pb-4 mb-6">
+                <h1 class="text-2xl font-bold text-blue-900 uppercase">Pejabat Agama Daerah Seberang Perai Tengah</h1>
+                <h2 class="text-xl font-semibold text-gray-700">Laporan Ringkasan Data Masjid & Surau</h2>
+                <p class="text-sm text-gray-500 mt-2">Tarikh Laporan: <span id="summaryDate"></span></p>
+            </div>
+
+            <!-- Table Content -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm border-collapse border border-gray-300">
+                    <thead>
+                        <tr class="bg-gray-200 text-gray-700">
+                            <th class="border border-gray-300 px-2 py-2 w-10">Bil</th>
+                            <th class="border border-gray-300 px-2 py-2">Nama Masjid</th>
+                            <th class="border border-gray-300 px-2 py-2">Nama Pengerusi</th>
+                            <th class="border border-gray-300 px-2 py-2">No. Telefon</th>
+                            <th class="border border-gray-300 px-2 py-2">No. Akaun Masjid</th>
+                            <th class="border border-gray-300 px-2 py-2">Nama Surau (Pencalonan)</th>
+                            <th class="border border-gray-300 px-2 py-2">No. Akaun Surau</th>
+                        </tr>
+                    </thead>
+                    <tbody id="summaryTableBody">
+                        <!-- Rows -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-8 text-right">
+                <p class="font-bold text-gray-700">Jumlah Data: <span id="totalDataCount">0</span></p>
+            </div>
+            
+            <div class="mt-8 text-center text-xs text-gray-400">
+                Laporan ini dijana secara komputer melalui Portal Pengurusan Data.
+            </div>
         </div>
     </div>
 
@@ -380,8 +430,6 @@
             const fileInputSurau = document.getElementById('fileAkaunSurau');
             const fileInputMasjid = document.getElementById('fileAkaun');
 
-            // Kita check Fail Surau sebab user minta wajib. 
-            // Kalau Fail Masjid juga wajib, boleh tambah check di sini.
             if (fileInputSurau.files.length === 0) {
                 alert("Sila muat naik Salinan Akaun Surau sebelum menghantar.");
                 return; // Stop submission
@@ -616,7 +664,52 @@
             }
         });
 
-        // --- PRINT / PDF VIEW LOGIC ---
+        // --- SUMMARY REPORT LOGIC (BARU) ---
+        function openSummaryReport() {
+            if(adminDataCache.length === 0) {
+                alert("Tiada data untuk dijana.");
+                return;
+            }
+
+            const modal = document.getElementById('summaryModal');
+            const tbody = document.getElementById('summaryTableBody');
+            const dateSpan = document.getElementById('summaryDate');
+            const countSpan = document.getElementById('totalDataCount');
+
+            // Set Tarikh
+            dateSpan.innerText = new Date().toLocaleDateString('ms-MY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            countSpan.innerText = adminDataCache.length;
+
+            // Bina Baris
+            let html = '';
+            adminDataCache.forEach((row, index) => {
+                html += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="border border-gray-300 px-2 py-2 text-center">${index + 1}</td>
+                        <td class="border border-gray-300 px-2 py-2 font-semibold">${row[1]}</td>
+                        <td class="border border-gray-300 px-2 py-2">${row[2]}</td>
+                        <td class="border border-gray-300 px-2 py-2 text-center">${row[3]}</td>
+                        <td class="border border-gray-300 px-2 py-2 text-center font-mono">${row[4]}</td>
+                        <td class="border border-gray-300 px-2 py-2">${row[6] || '-'}</td>
+                        <td class="border border-gray-300 px-2 py-2 text-center font-mono">${row[7] || '-'}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+            
+            // Tukar Paparan
+            document.getElementById('adminSection').classList.add('hidden');
+            modal.classList.remove('hidden');
+            window.scrollTo(0,0);
+        }
+
+        function closeSummaryReport() {
+            document.getElementById('summaryModal').classList.add('hidden');
+            document.getElementById('adminSection').classList.remove('hidden');
+        }
+
+        // --- PRINT / PDF VIEW LOGIC (INDIVIDU) ---
         function openPrintView(index) {
             const row = adminDataCache[index];
             if (!row) return;
