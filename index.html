@@ -94,7 +94,8 @@
                     <div>
                         <label for="namaMasjid" class="block text-sm font-semibold text-gray-700 mb-2">Nama Masjid <span class="text-red-500">*</span></label>
                         <div class="relative">
-                            <select id="namaMasjid" name="namaMasjid" required class="block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border shadow-sm appearance-none bg-white text-gray-900">
+                            <!-- Ditambah onchange="toggleManualInput(this)" -->
+                            <select id="namaMasjid" name="namaMasjid" required onchange="toggleManualInput(this)" class="block w-full pl-3 pr-10 py-3 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border shadow-sm appearance-none bg-white text-gray-900">
                                 <option value="" disabled selected>-- Sila Pilih Masjid --</option>
                                 <option value="Masjid Pengkalan Tambang">Masjid Pengkalan Tambang</option>
                                 <option value="Masjid Bukit Indera Muda">Masjid Bukit Indera Muda</option>
@@ -106,8 +107,16 @@
                                 <option value="Masjid Mengkuang Semarak">Masjid Mengkuang Semarak</option>
                                 <option value="Masjid Sama Gagah">Masjid Sama Gagah</option>
                                 <option value="Masjid Kubang Ulu">Masjid Kubang Ulu</option>
+                                <!-- Pilihan Baru Lain-lain -->
+                                <option value="Lain-lain" class="font-bold text-blue-800 bg-blue-50">Lain-lain (Nyatakan Sendiri)</option>
                             </select>
                             <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700"><i class="fas fa-chevron-down text-xs"></i></div>
+                        </div>
+                        
+                        <!-- Input Manual (Hidden by default) -->
+                        <div id="manualInputContainer" class="hidden mt-3 animate-fade-in-down">
+                            <label for="namaMasjidManual" class="block text-sm font-semibold text-gray-700 mb-2">Nyatakan Nama Masjid <span class="text-red-500">*</span></label>
+                            <input type="text" id="namaMasjidManual" name="namaMasjidManual" class="focus:ring-blue-500 focus:border-blue-500 block w-full pl-3 sm:text-sm border-gray-300 rounded-md py-3 border bg-blue-50" placeholder="Sila taip nama penuh masjid di sini...">
                         </div>
                     </div>
 
@@ -397,6 +406,24 @@
         const ADMIN_PASSWORD = "admin123"; 
 
         // --- PUBLIC LOGIC ---
+        
+        // Fungsi baru untuk kawal dropdown "Lain-lain"
+        function toggleManualInput(selectElement) {
+            const container = document.getElementById('manualInputContainer');
+            const input = document.getElementById('namaMasjidManual');
+            
+            if (selectElement.value === 'Lain-lain') {
+                container.classList.remove('hidden');
+                input.required = true;
+                // Auto focus input bila muncul
+                setTimeout(() => input.focus(), 100);
+            } else {
+                container.classList.add('hidden');
+                input.required = false;
+                input.value = ''; // Kosongkan jika tutup
+            }
+        }
+
         function updateFileName(input, spanId) {
             const fileNameSpan = document.getElementById(spanId);
             if (input.files && input.files.length > 0) {
@@ -444,6 +471,14 @@
             try {
                 const formData = new FormData(form);
                 const dataObject = Object.fromEntries(formData.entries());
+
+                // LOGIK BARU: Handle "Lain-lain"
+                if (dataObject.namaMasjid === 'Lain-lain') {
+                    // Gantikan nilai 'Lain-lain' dengan apa yang user taip
+                    dataObject.namaMasjid = dataObject.namaMasjidManual;
+                }
+                // Padam field manual dari dihantar ke DB supaya tak serabut (optional)
+                delete dataObject.namaMasjidManual;
                 
                 if (fileInputMasjid.files.length > 0) dataObject.fileAkaun = await fileToBase64(fileInputMasjid.files[0]);
                 if (fileInputSurau.files.length > 0) dataObject.fileAkaunSurau = await fileToBase64(fileInputSurau.files[0]);
@@ -458,6 +493,10 @@
                 form.reset();
                 updateFileName(document.getElementById('fileAkaun'), 'fileName'); 
                 updateFileName(document.getElementById('fileAkaunSurau'), 'fileNameSurau'); 
+                
+                // Reset dropdown manual input view
+                document.getElementById('manualInputContainer').classList.add('hidden');
+                
             } catch (error) {
                 console.error(error); alert("Ralat teknikal semasa menghantar data.");
                 loadingSpinner.style.display = "none"; btnText.innerText = "CUBA LAGI";
